@@ -350,12 +350,12 @@ onAuthStateChanged(auth, async function(user) {
     }
 
     if (isAdmin) {
-        showMessage(adminStatus, "Sesión iniciada como administrador.");
+        showMessage(adminStatus, "Sesión iniciada como senpai.");
 
     } else if (isCollaborator) {
         showMessage(
             adminStatus,
-            "Sesión iniciada como colaborador. Puedes publicar y editar tu perfil."
+            "Sesión iniciada como kohai."
         );
 
     } else {
