@@ -9,10 +9,8 @@
     <title>Mi Blog Personal</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
-
 <body>
 
-    <!-- ENCABEZADO -->
     <header class="topbar">
         <a href="#" class="logo" id="home-link">
             <span class="logo-icon"></span>
@@ -21,17 +19,16 @@
 
         <nav class="top-nav">
             <a href="#" id="home-nav-link">Inicio</a>
+            <a href="#authors" id="authors-link">Incels</a>
             <a href="#profile" id="profile-link">Mi perfil</a>
         </nav>
     </header>
 
     <div class="layout">
 
-        <!-- BARRA LATERAL -->
         <aside class="sidebar">
-
             <div class="sidebar-heading">
-                <span class="sidebar-icon"></span>
+                <span class="sidebar-icon">✦</span>
                 <h2>Explorar</h2>
             </div>
 
@@ -41,7 +38,7 @@
                 Inicio
             </button>
 
-            <p class="sidebar-label">MIS CATEGORIAS</p>
+            <p class="sidebar-label">MIS CATEGORÍAS</p>
 
             <button class="category-btn" data-category="Videojuegos">
                 Videojuegos
@@ -54,74 +51,50 @@
             <button class="category-btn" data-category="Pendejadas">
                 Pendejadas
             </button>
-
         </aside>
 
-        <!-- CONTENIDO PRINCIPAL -->
         <main class="feed">
 
-            <!-- PERFIL -->
+            <!-- PERFIL PROPIO -->
             <section id="profile-section" class="profile-page" hidden>
-
                 <div class="section-heading">
-                    <span class="eyebrow">MI ESPACIO PERSONAL</span>
+                    <span class="eyebrow">MI BLOG PERSONAL</span>
                     <h2>Mi perfil</h2>
+                    <p>Tu información pública como autor del blog.</p>
                 </div>
 
                 <div class="profile-card">
-
                     <div class="profile-cover"></div>
 
                     <div class="profile-info">
-
-                        <img
-                            id="profile-image"
-                            alt="Foto de perfil"
-                            hidden
-                        >
+                        <img id="profile-image" alt="Foto de perfil" hidden>
 
                         <div class="profile-details">
                             <h3 id="profile-name">Mi Blog</h3>
-
                             <p id="profile-description">
-                                Todavía no hay descripcion.
+                                Todavía no hay descripción.
                             </p>
-
-                            <p id="profile-age"></p>
+                            <p id="profile-role" class="profile-role"></p>
                         </div>
-
                     </div>
 
-                    <!-- SOLO ADMINISTRADOR -->
-                    <div
-                        class="profile-edit-area"
-                        id="profile-admin-controls"
-                        hidden
-                    >
+                    <div class="profile-edit-area"
+                         id="profile-admin-controls"
+                         hidden>
                         <button type="button" id="edit-profile-button">
-                            Editar perfil
+                            Editar mi perfil
                         </button>
                     </div>
-
                 </div>
 
-                <!-- EDITAR PERFIL -->
-                <form
-                    id="profile-form"
-                    class="form-card"
-                    hidden
-                >
-
+                <form id="profile-form" class="form-card" hidden>
                     <h3>Personaliza tu perfil</h3>
 
                     <p class="form-description">
-                        Actualiza tu informacion.
+                        Estos datos serán visibles en la sección Incels.
                     </p>
 
-                    <label for="profile-name-input">
-                        Nombre
-                    </label>
-
+                    <label for="profile-name-input">Nombre público</label>
                     <input
                         type="text"
                         id="profile-name-input"
@@ -130,32 +103,14 @@
                         required
                     >
 
-                    <label for="profile-description-input">
-                        Descripcion
-                    </label>
-
+                    <label for="profile-description-input">Descripción</label>
                     <textarea
                         id="profile-description-input"
                         maxlength="500"
                         placeholder="Cuéntanos algo sobre ti..."
                     ></textarea>
 
-                    <label for="profile-age-input">
-                        Edad (opcional)
-                    </label>
-
-                    <input
-                        type="number"
-                        id="profile-age-input"
-                        min="1"
-                        max="120"
-                        placeholder="Opcional"
-                    >
-
-                    <label for="profile-image-input">
-                        Foto de perfil
-                    </label>
-
+                    <label for="profile-image-input">Foto de perfil</label>
                     <input
                         type="file"
                         id="profile-image-input"
@@ -169,10 +124,7 @@
                     >
 
                     <div class="form-buttons">
-
-                        <button type="submit">
-                            Guardar cambios
-                        </button>
+                        <button type="submit">Guardar cambios</button>
 
                         <button
                             type="button"
@@ -181,45 +133,42 @@
                         >
                             Cancelar
                         </button>
-
                     </div>
-
                 </form>
+            </section>
 
+            <!-- AUTORES -->
+            <section id="authors-section" hidden>
+                <div class="section-heading">
+                    <span class="eyebrow">LOS INCELS</span>
+                    <h2>CHUDS</h2>
+                    <p>Conoce a los fracasados que publican.</p>
+                </div>
+
+                <div id="authors-container" class="authors-grid"
+                     aria-live="polite">
+                    <p class="empty-message">Cargando incels...</p>
+                </div>
             </section>
 
             <!-- INICIO -->
             <section id="home-section" class="home-page">
-
                 <div class="section-heading">
-
-                    <span class="eyebrow">
-                        BIENVENIDO
-                    </span>
-
+                    <span class="eyebrow">BIENVENIDO</span>
                     <h2>Mi blog personal</h2>
-
-                    <p>
-                        Hola xd
-                    </p>
-
+                    <p>Hola xd</p>
                 </div>
 
-                <!-- ACCESO ADMINISTRADOR -->
+                <!-- INICIAR SESIÓN -->
                 <div class="form-card" id="admin-login-area">
-
-                    <h3>Administracion</h3>
+                    <h3>Administración</h3>
 
                     <p class="form-description">
-                        Contactame para publicar :v
+                        Inicia sesión si eres administrador o colaborador.
                     </p>
 
                     <form id="admin-login-form">
-
-                        <label for="admin-email">
-                            Correo electronico
-                        </label>
-
+                        <label for="admin-email">Correo electrónico</label>
                         <input
                             type="email"
                             id="admin-email"
@@ -228,10 +177,7 @@
                             required
                         >
 
-                        <label for="admin-password">
-                            Contraseña
-                        </label>
-
+                        <label for="admin-password">Contraseña</label>
                         <input
                             type="password"
                             id="admin-password"
@@ -240,95 +186,57 @@
                             required
                         >
 
-                        <button type="submit">
-                            Iniciar sesion
-                        </button>
-
+                        <button type="submit">Iniciar sesión</button>
                     </form>
 
                     <button
                         type="button"
                         id="admin-logout-button"
+                        class="secondary-button"
                         hidden
                     >
-                        Cerrar sesion
+                        Cerrar sesión
                     </button>
 
-                    <p
-                        id="admin-status"
-                        role="status"
-                        aria-live="polite"
-                    ></p>
-
+                    <p id="admin-status" role="status"
+                       aria-live="polite"></p>
                 </div>
 
-                <!-- CREAR PUBLICACIÓN: SOLO ADMINISTRADOR -->
-                <form
-                    id="post-form"
-                    class="form-card"
-                    hidden
-                >
-
-                    <h3 id="form-title">
-                        Crear publicación
-                    </h3>
+                <!-- CREAR PUBLICACIÓN -->
+                <form id="post-form" class="form-card" hidden>
+                    <h3 id="form-title">Crear publicación</h3>
 
                     <p class="form-description">
-                        Publica algo
+                        Comparte algo con los visitantes del blog.
                     </p>
 
-                    <label for="post-content">
-                        Mi publicacion
-                    </label>
-
+                    <label for="post-content">Mi publicación</label>
                     <textarea
                         id="post-content"
                         placeholder="Escribe algo interesante..."
                         required
                     ></textarea>
 
-                    <label for="post-category">
-                        Categoria
-                    </label>
-
+                    <label for="post-category">Categoría</label>
                     <select id="post-category" required>
-
-                        <option value="Videojuegos">
-                            Videojuegos
-                        </option>
-
-                        <option value="Anime">
-                            Anime
-                        </option>
-
-                        <option value="Pendejadas">
-                            Pendejadas
-                        </option>
-
+                        <option value="Videojuegos">Videojuegos</option>
+                        <option value="Anime">Anime</option>
+                        <option value="Pendejadas">Pendejadas</option>
                     </select>
 
-                    <label for="post-image">
-                        Añadir imagen
-                    </label>
-
+                    <label for="post-image">Añadir imagen</label>
                     <input
                         type="file"
                         id="post-image"
                         accept="image/*"
                     >
 
-                    <img
-                        id="image-preview"
-                        alt="Vista previa de publicación"
-                        hidden
-                    >
+                    <img id="image-preview"
+                         alt="Vista previa de publicación"
+                         hidden>
 
                     <div class="form-buttons">
-
-                        <button
-                            type="submit"
-                            id="submit-button"
-                        >
+                        <button type="submit" id="submit-button">
                             Publicar
                         </button>
 
@@ -340,35 +248,20 @@
                         >
                             Cancelar edición
                         </button>
-
                     </div>
-
                 </form>
 
-                <!-- PUBLICACIONES -->
                 <div class="posts-heading">
-
                     <h3>Publicaciones</h3>
-
-                    <span class="posts-decoration">
-                    </span>
-
+                    <span class="posts-decoration">✦ ✦ ✦</span>
                 </div>
 
-                <section
-                    id="posts-container"
-                    aria-live="polite"
-                ></section>
-
+                <section id="posts-container" aria-live="polite"></section>
             </section>
 
         </main>
-
     </div>
 
-
-    <!-- JAVASCRIPT -->
     <script type="module" src="js/script.js"></script>
-
 </body>
 </html>

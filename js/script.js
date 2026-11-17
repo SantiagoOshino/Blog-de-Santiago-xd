@@ -14,7 +14,8 @@ import {
     onSnapshot,
     query,
     orderBy,
-    setDoc
+    setDoc,
+    getDoc
 } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
 import {
@@ -25,7 +26,7 @@ import {
 
 
 /* ==========================================
-   CONFIGURACIÓN DE USUARIOS
+   CONFIGURACIÓN
 ========================================== */
 
 const ADMIN_UID = "53x9OTzsIqZgWyaES5gVUFAUprC3";
@@ -45,6 +46,8 @@ let isCollaborator = false;
 let currentUser = null;
 
 let posts = [];
+let profiles = [];
+
 let currentCategory = "Inicio";
 let editingPostId = null;
 
@@ -54,7 +57,6 @@ let selectedProfileImage = null;
 let profile = {
     name: "Tu nombre",
     description: "Todavía no hay descripción.",
-    age: "",
     image: ""
 };
 
@@ -67,18 +69,38 @@ function canPublish() {
     return isAdmin || isCollaborator;
 }
 
+function getRole(uid) {
+    if (uid === ADMIN_UID) return "Administrador";
+    if (COLLABORATOR_UIDS.includes(uid)) return "Colaborador";
+    return "Autor";
+}
+
+function getCurrentProfile() {
+    if (!currentUser) return profile;
+
+    return profiles.find(item => item.id === currentUser.uid) || {
+        id: currentUser.uid,
+        name: "Nuevo autor",
+        description: "Todavía no hay descripción.",
+        image: ""
+    };
+}
+
 
 /* ==========================================
-   ELEMENTOS DEL HTML
+   ELEMENTOS HTML
 ========================================== */
 
 // Navegación
 const homeLink = document.getElementById("home-link");
 const homeNavLink = document.getElementById("home-nav-link");
 const profileLink = document.getElementById("profile-link");
+const authorsLink = document.getElementById("authors-link");
 
 const homeSection = document.getElementById("home-section");
 const profileSection = document.getElementById("profile-section");
+const authorsSection = document.getElementById("authors-section");
+const authorsContainer = document.getElementById("authors-container");
 
 // Categorías
 const categoryButtons = document.querySelectorAll(".category-btn");
@@ -102,24 +124,30 @@ const profileForm = document.getElementById("profile-form");
 const cancelProfileButton = document.getElementById("cancel-profile-button");
 
 const profileNameInput = document.getElementById("profile-name-input");
-const profileDescriptionInput = document.getElementById("profile-description-input");
-const profileAgeInput = document.getElementById("profile-age-input");
+const profileDescriptionInput =
+    document.getElementById("profile-description-input");
 
 const profileImageInput = document.getElementById("profile-image-input");
-const profileImagePreview = document.getElementById("profile-image-preview");
+const profileImagePreview =
+    document.getElementById("profile-image-preview");
 
 const profileName = document.getElementById("profile-name");
-const profileDescription = document.getElementById("profile-description");
-const profileAge = document.getElementById("profile-age");
+const profileDescription =
+    document.getElementById("profile-description");
+
+const profileRole = document.getElementById("profile-role");
 const profileImage = document.getElementById("profile-image");
 
-// Administración
+// Autenticación
 const adminLoginForm = document.getElementById("admin-login-form");
 const adminEmail = document.getElementById("admin-email");
 const adminPassword = document.getElementById("admin-password");
-const adminLogoutButton = document.getElementById("admin-logout-button");
+const adminLogoutButton =
+    document.getElementById("admin-logout-button");
+
 const adminStatus = document.getElementById("admin-status");
-const profileAdminControls = document.getElementById("profile-admin-controls");
+const profileAdminControls =
+    document.getElementById("profile-admin-controls");
 
 
 /* ==========================================
@@ -136,16 +164,13 @@ function setAdminUI() {
     const loggedIn = canPublish();
 
     postForm.hidden = !loggedIn;
-    profileAdminControls.hidden = !isAdmin;
+    profileAdminControls.hidden = !loggedIn;
 
     adminLoginForm.hidden = loggedIn;
     adminLogoutButton.hidden = !loggedIn;
 
-    if (!isAdmin) {
-        profileForm.hidden = true;
-    }
-
     if (!loggedIn) {
+        profileForm.hidden = true;
         resetPostForm();
     }
 }
@@ -153,7 +178,7 @@ function setAdminUI() {
 function readImage(file, maxSize) {
     return new Promise((resolve, reject) => {
         if (!file || !file.type.startsWith("image/")) {
-            reject(new Error("Selecciona un archivo de imagen válido."));
+            reject(new Error("Selecciona una imagen válida."));
             return;
         }
 
@@ -167,7 +192,9 @@ function readImage(file, maxSize) {
         const reader = new FileReader();
 
         reader.onload = () => resolve(reader.result);
-        reader.onerror = () => reject(new Error("No se pudo leer la imagen."));
+        reader.onerror = () => reject(
+            new Error("No se pudo leer la imagen.")
+        );
 
         reader.readAsDataURL(file);
     });
@@ -179,10 +206,13 @@ function readImage(file, maxSize) {
 ========================================== */
 
 function showPage(page) {
-    const showingProfile = page === "profile";
+    homeSection.hidden = page !== "home";
+    profileSection.hidden = page !== "profile";
+    authorsSection.hidden = page !== "authors";
 
-    homeSection.hidden = showingProfile;
-    profileSection.hidden = !showingProfile;
+    if (page === "profile") {
+        renderProfile();
+    }
 }
 
 function goHome(event) {
@@ -195,7 +225,23 @@ homeNavLink.addEventListener("click", goHome);
 
 profileLink.addEventListener("click", function(event) {
     event.preventDefault();
+
+    if (!currentUser || !canPublish()) {
+        showMessage(
+            adminStatus,
+            "Inicia sesión para consultar y editar tu perfil."
+        );
+        showPage("home");
+        return;
+    }
+
     showPage("profile");
+});
+
+authorsLink.addEventListener("click", function(event) {
+    event.preventDefault();
+    showPage("authors");
+    renderAuthors();
 });
 
 
@@ -236,6 +282,59 @@ adminLogoutButton.addEventListener("click", async function() {
     }
 });
 
+
+/* ==========================================
+   CREAR O RECUPERAR PERFIL
+========================================== */
+
+async function ensureUserProfile(user) {
+    const newProfileRef = doc(db, "profiles", user.uid);
+
+    try {
+        const existingProfile = await getDoc(newProfileRef);
+
+        if (existingProfile.exists()) {
+            return;
+        }
+
+        let initialProfile = {
+            name: "Nuevo autor",
+            description: "Todavía no hay descripción.",
+            image: ""
+        };
+
+        // Recuperar el perfil antiguo del administrador.
+        if (user.uid === ADMIN_UID) {
+            const oldProfileRef = doc(db, "site", "profile");
+            const oldProfile = await getDoc(oldProfileRef);
+
+            if (oldProfile.exists()) {
+                const oldData = oldProfile.data();
+
+                initialProfile = {
+                    name: oldData.name || "Administrador",
+                    description: oldData.description || "",
+                    image: oldData.image || ""
+                };
+            } else {
+                initialProfile.name = "Administrador";
+            }
+        }
+
+        await setDoc(newProfileRef, {
+            ...initialProfile,
+            createdAt: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error("Error al preparar el perfil:", error);
+        showMessage(
+            adminStatus,
+            "No se pudo preparar el perfil. Comprueba las reglas de Firestore."
+        );
+    }
+}
+
 onAuthStateChanged(auth, async function(user) {
     currentUser = user;
 
@@ -244,28 +343,125 @@ onAuthStateChanged(auth, async function(user) {
     isCollaborator = !!user &&
         COLLABORATOR_UIDS.includes(user.uid);
 
+    if (user && !canPublish()) {
+        showMessage(adminStatus, "Esta cuenta no tiene permisos.");
+        await signOut(auth);
+        return;
+    }
+
     if (isAdmin) {
         showMessage(adminStatus, "Sesión iniciada como administrador.");
 
     } else if (isCollaborator) {
-        showMessage(adminStatus, "Sesión iniciada como colaborador. Puedes publicar.");
-
-    } else if (user) {
-        showMessage(adminStatus, "Esta cuenta no tiene permisos.");
-
-        await signOut(auth);
+        showMessage(
+            adminStatus,
+            "Sesión iniciada como colaborador. Puedes publicar y editar tu perfil."
+        );
 
     } else {
         showMessage(adminStatus, "");
     }
 
     setAdminUI();
+
+    if (user && canPublish()) {
+        await ensureUserProfile(user);
+    }
+
+    renderProfile();
+    renderAuthors();
     renderPosts();
 });
 
 
 /* ==========================================
-   PUBLICACIONES: ESCUCHAR FIRESTORE
+   ESCUCHAR PERFILES
+========================================== */
+
+onSnapshot(collection(db, "profiles"), function(snapshot) {
+    profiles = snapshot.docs.map(document => ({
+        id: document.id,
+        ...document.data()
+    }));
+
+    renderProfile();
+    renderAuthors();
+    renderPosts();
+
+}, function(error) {
+    console.error("Error al cargar autores:", error);
+
+    authorsContainer.textContent =
+        "No se pudieron cargar los perfiles.";
+});
+
+
+/* ==========================================
+   MOSTRAR AUTORES
+========================================== */
+
+function renderAuthors() {
+    authorsContainer.innerHTML = "";
+
+    const sortedProfiles = [...profiles].sort((a, b) =>
+        (a.name || "").localeCompare(b.name || "", "es")
+    );
+
+    if (sortedProfiles.length === 0) {
+        const message = document.createElement("p");
+        message.className = "empty-message";
+        message.textContent =
+            "Todavía no hay autores registrados.";
+
+        authorsContainer.appendChild(message);
+        return;
+    }
+
+    sortedProfiles.forEach(authorProfile => {
+        const card = document.createElement("article");
+        card.className = "author-card";
+
+        const header = document.createElement("div");
+        header.className = "author-card-header";
+
+        if (authorProfile.image) {
+            const avatar = document.createElement("img");
+            avatar.className = "author-avatar";
+            avatar.src = authorProfile.image;
+            avatar.alt = "Foto de " + (authorProfile.name || "autor");
+            header.appendChild(avatar);
+        } else {
+            const placeholder = document.createElement("div");
+            placeholder.className = "author-avatar-placeholder";
+            placeholder.textContent = "✦";
+            header.appendChild(placeholder);
+        }
+
+        const identity = document.createElement("div");
+
+        const name = document.createElement("h3");
+        name.textContent = authorProfile.name || "Autor";
+
+        const role = document.createElement("span");
+        role.className = "author-role";
+        role.textContent = getRole(authorProfile.id);
+
+        identity.append(name, role);
+        header.appendChild(identity);
+
+        const description = document.createElement("p");
+        description.className = "author-description";
+        description.textContent =
+            authorProfile.description || "Este autor todavía no ha escrito una descripción.";
+
+        card.append(header, description);
+        authorsContainer.appendChild(card);
+    });
+}
+
+
+/* ==========================================
+   ESCUCHAR PUBLICACIONES
 ========================================== */
 
 const postsQuery = query(
@@ -285,7 +481,7 @@ onSnapshot(postsQuery, function(snapshot) {
     console.error("Error al cargar publicaciones:", error);
 
     postsContainer.textContent =
-        "No se pudieron cargar las publicaciones. Intenta más tarde.";
+        "No se pudieron cargar las publicaciones.";
 });
 
 
@@ -294,21 +490,27 @@ onSnapshot(postsQuery, function(snapshot) {
 ========================================== */
 
 async function createPost(content, category, image) {
-    if (!canPublish()) return;
+    if (!canPublish() || !currentUser) return;
+
+    const authorProfile = getCurrentProfile();
 
     try {
         await addDoc(collection(db, "posts"), {
             content,
             category,
             image: image || "",
-            date: new Date().toISOString()
+            date: new Date().toISOString(),
+
+            authorUid: currentUser.uid,
+            authorName: authorProfile.name || "Autor",
+            authorImage: authorProfile.image || ""
         });
 
         resetPostForm();
 
     } catch (error) {
         console.error("Error al crear publicación:", error);
-        alert("No se pudo publicar. Comprueba tu conexión e inténtalo de nuevo.");
+        alert("No se pudo publicar. Comprueba tu conexión y las reglas de Firestore.");
     }
 }
 
@@ -372,7 +574,7 @@ async function updatePost(id, content, category, image) {
 
 
 /* ==========================================
-   REINICIAR FORMULARIO
+   REINICIAR FORMULARIO DE PUBLICACIÓN
 ========================================== */
 
 function resetPostForm() {
@@ -385,7 +587,7 @@ function resetPostForm() {
     imagePreview.hidden = true;
 
     formTitle.textContent = "Crear publicación";
-    submitButton.textContent = "✦ Publicar";
+    submitButton.textContent = "Publicar";
     cancelButton.hidden = true;
 }
 
@@ -441,28 +643,50 @@ function renderPosts() {
         const article = document.createElement("article");
         article.className = "post";
 
+        // Buscar el perfil actual del autor.
+        const authorUid = post.authorUid || ADMIN_UID;
+
+        const authorProfile = profiles.find(
+            item => item.id === authorUid
+        );
+
+        const authorName = authorProfile?.name ||
+            post.authorName ||
+            "Autor";
+
+        const authorImage = authorProfile?.image ||
+            post.authorImage ||
+            "";
+
         // Autor
         const author = document.createElement("div");
         author.className = "post-author";
 
-        if (profile.image) {
+        if (authorImage) {
             const avatar = document.createElement("img");
-            avatar.src = profile.image;
-            avatar.alt = "Foto de perfil";
+            avatar.src = authorImage;
+            avatar.alt = "Foto de " + authorName;
             author.appendChild(avatar);
         }
 
-        const authorName = document.createElement("strong");
-        authorName.textContent = profile.name || "Tu nombre";
+        const authorInfo = document.createElement("div");
 
-        author.appendChild(authorName);
+        const name = document.createElement("strong");
+        name.textContent = authorName;
+
+        const role = document.createElement("small");
+        role.className = "post-date";
+        role.textContent = getRole(authorUid);
+
+        authorInfo.append(name, role);
+        author.appendChild(authorInfo);
 
         // Categoría
         const category = document.createElement("p");
         category.className = "post-category";
         category.textContent = "Categoría: " + post.category;
 
-        // Texto
+        // Contenido
         const content = document.createElement("p");
         content.className = "post-content";
         content.textContent = post.content || "";
@@ -567,6 +791,7 @@ postImage.addEventListener("change", async function() {
         alert(error.message);
 
         postImage.value = "";
+
         selectedPostImage = editingPostId
             ? posts.find(post => post.id === editingPostId)?.image || null
             : null;
@@ -629,51 +854,27 @@ cancelButton.addEventListener("click", resetPostForm);
 
 
 /* ==========================================
-   PERFIL: ESCUCHAR FIRESTORE
-========================================== */
-
-const profileRef = doc(db, "site", "profile");
-
-onSnapshot(profileRef, function(snapshot) {
-    if (snapshot.exists()) {
-        const data = snapshot.data();
-
-        profile = {
-            name: typeof data.name === "string"
-                ? data.name
-                : "Tu nombre",
-
-            description: typeof data.description === "string"
-                ? data.description
-                : "",
-
-            age: data.age ?? "",
-
-            image: typeof data.image === "string"
-                ? data.image
-                : ""
-        };
-    }
-
-    renderProfile();
-    renderPosts();
-
-}, function(error) {
-    console.error("Error al cargar perfil:", error);
-});
-
-
-/* ==========================================
-   PERFIL: MOSTRAR INFORMACIÓN
+   MOSTRAR PERFIL PROPIO
 ========================================== */
 
 function renderProfile() {
-    profileName.textContent = profile.name;
-    profileDescription.textContent = profile.description;
+    if (!currentUser || !canPublish()) {
+        profileName.textContent = "Inicia sesión";
+        profileDescription.textContent =
+            "Necesitas iniciar sesión para consultar tu perfil.";
+        profileRole.textContent = "";
+        profileImage.hidden = true;
+        return;
+    }
 
-    profileAge.textContent = profile.age
-        ? "Edad: " + profile.age
-        : "";
+    profile = getCurrentProfile();
+
+    profileName.textContent = profile.name || "Nuevo autor";
+
+    profileDescription.textContent =
+        profile.description || "Todavía no hay descripción.";
+
+    profileRole.textContent = getRole(currentUser.uid);
 
     if (profile.image) {
         profileImage.src = profile.image;
@@ -686,21 +887,23 @@ function renderProfile() {
 
 
 /* ==========================================
-   PERFIL: ABRIR EDITOR
+   ABRIR EDITOR DE PERFIL
 ========================================== */
 
 editProfileButton.addEventListener("click", function() {
-    if (!isAdmin) return;
+    if (!canPublish() || !currentUser) return;
 
-    profileNameInput.value = profile.name;
-    profileDescriptionInput.value = profile.description;
-    profileAgeInput.value = profile.age ?? "";
+    const currentProfile = getCurrentProfile();
+
+    profileNameInput.value = currentProfile.name || "";
+    profileDescriptionInput.value =
+        currentProfile.description || "";
 
     profileImageInput.value = "";
     selectedProfileImage = null;
 
-    if (profile.image) {
-        profileImagePreview.src = profile.image;
+    if (currentProfile.image) {
+        profileImagePreview.src = currentProfile.image;
         profileImagePreview.hidden = false;
     } else {
         profileImagePreview.removeAttribute("src");
@@ -712,7 +915,7 @@ editProfileButton.addEventListener("click", function() {
 
 
 /* ==========================================
-   PERFIL: VISTA PREVIA DE FOTO
+   VISTA PREVIA DE FOTO DE PERFIL
 ========================================== */
 
 profileImageInput.addEventListener("change", async function() {
@@ -739,42 +942,30 @@ profileImageInput.addEventListener("change", async function() {
 
 
 /* ==========================================
-   PERFIL: GUARDAR CAMBIOS
+   GUARDAR PERFIL PROPIO
 ========================================== */
 
 profileForm.addEventListener("submit", async function(event) {
     event.preventDefault();
 
-    if (!isAdmin) return;
+    if (!canPublish() || !currentUser) return;
 
     const name = profileNameInput.value.trim();
     const description = profileDescriptionInput.value.trim();
-
-    const ageText = profileAgeInput.value.trim();
-
-    let age = "";
-
-    if (ageText !== "") {
-        age = Number(ageText);
-
-        if (!Number.isInteger(age) || age < 1 || age > 120) {
-            alert("Escribe una edad válida o deja el campo vacío.");
-            return;
-        }
-    }
 
     if (!name) {
         alert("Escribe un nombre.");
         return;
     }
 
+    const currentProfile = getCurrentProfile();
+
     const updatedProfile = {
         name,
         description,
-        age,
         image: selectedProfileImage !== null
             ? selectedProfileImage
-            : profile.image
+            : currentProfile.image || ""
     };
 
     const saveButton = profileForm.querySelector(
@@ -784,15 +975,21 @@ profileForm.addEventListener("submit", async function(event) {
     saveButton.disabled = true;
 
     try {
-        await setDoc(profileRef, updatedProfile);
+        await setDoc(
+            doc(db, "profiles", currentUser.uid),
+            updatedProfile,
+            { merge: true }
+        );
 
         profileForm.hidden = true;
         selectedProfileImage = null;
         profileImageInput.value = "";
 
+        showMessage(adminStatus, "Tu perfil se guardó correctamente.");
+
     } catch (error) {
         console.error("Error al guardar perfil:", error);
-        alert("No se pudo guardar el perfil. Inténtalo de nuevo.");
+        alert("No se pudo guardar el perfil. Comprueba las reglas de Firestore.");
 
     } finally {
         saveButton.disabled = false;
@@ -801,7 +998,7 @@ profileForm.addEventListener("submit", async function(event) {
 
 
 /* ==========================================
-   PERFIL: CANCELAR EDICIÓN
+   CANCELAR EDICIÓN DE PERFIL
 ========================================== */
 
 cancelProfileButton.addEventListener("click", function() {
@@ -821,6 +1018,7 @@ cancelProfileButton.addEventListener("click", function() {
 
 setAdminUI();
 renderProfile();
+renderAuthors();
 renderPosts();
 showPage("home");
 
