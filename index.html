@@ -1,0 +1,384 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#100d18">
+    <meta name="description" content="Mi blog personal: ideas, recuerdos y cosas para compartir.">
+    <title>Mi Blog Personal</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <!-- ENCABEZADO -->
+    <header class="topbar">
+        <a href="#" class="logo" id="home-link">
+            <span class="logo-icon">✦</span>
+            Mi Blog
+        </a>
+
+        <nav class="top-nav">
+            <a href="#" id="home-nav-link">Inicio</a>
+            <a href="#profile" id="profile-link">Mi perfil</a>
+        </nav>
+    </header>
+
+    <div class="layout">
+
+        <!-- BARRA LATERAL -->
+        <aside class="sidebar">
+
+            <div class="sidebar-heading">
+                <span class="sidebar-icon">☰</span>
+                <h2>Explorar</h2>
+            </div>
+
+            <p class="sidebar-label">MENÚ PRINCIPAL</p>
+
+            <button class="category-btn active" data-category="Inicio">
+                <span>⌂</span> Inicio
+            </button>
+
+            <p class="sidebar-label">MIS CATEGORÍAS</p>
+
+            <button class="category-btn" data-category="Videojuegos">
+                Videojuegos
+            </button>
+
+            <button class="category-btn" data-category="Anime">
+                Anime
+            </button>
+
+            <button class="category-btn" data-category="Pendejadas">
+                Pendejadas
+            </button>
+
+        </aside>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <main class="feed">
+
+            <!-- PERFIL -->
+            <section id="profile-section" class="profile-page" hidden>
+
+                <div class="section-heading">
+                    <span class="eyebrow">MI ESPACIO PERSONAL</span>
+                    <h2>Mi perfil</h2>
+                    <p>Un pequeño rincón sobre mí.</p>
+                </div>
+
+                <div class="profile-card">
+
+                    <div class="profile-cover"></div>
+
+                    <div class="profile-info">
+
+                        <img
+                            id="profile-image"
+                            alt="Foto de perfil"
+                            hidden
+                        >
+
+                        <div class="profile-details">
+                            <h3 id="profile-name">Mi Blog</h3>
+
+                            <p id="profile-description">
+                                Todavía no hay descripción.
+                            </p>
+
+                            <p id="profile-age"></p>
+                        </div>
+
+                    </div>
+
+                    <!-- SOLO ADMINISTRADOR -->
+                    <div
+                        class="profile-edit-area"
+                        id="profile-admin-controls"
+                        hidden
+                    >
+                        <button type="button" id="edit-profile-button">
+                            ✎ Editar perfil
+                        </button>
+                    </div>
+
+                </div>
+
+                <!-- EDITAR PERFIL -->
+                <form
+                    id="profile-form"
+                    class="form-card"
+                    hidden
+                >
+
+                    <h3>Personaliza tu perfil</h3>
+
+                    <p class="form-description">
+                        Actualiza tu información.
+                    </p>
+
+                    <label for="profile-name-input">
+                        Nombre
+                    </label>
+
+                    <input
+                        type="text"
+                        id="profile-name-input"
+                        maxlength="50"
+                        placeholder="Tu nombre"
+                        required
+                    >
+
+                    <label for="profile-description-input">
+                        Descripción
+                    </label>
+
+                    <textarea
+                        id="profile-description-input"
+                        maxlength="500"
+                        placeholder="Cuéntanos algo sobre ti..."
+                    ></textarea>
+
+                    <label for="profile-age-input">
+                        Edad (opcional)
+                    </label>
+
+                    <input
+                        type="number"
+                        id="profile-age-input"
+                        min="1"
+                        max="120"
+                        placeholder="Opcional"
+                    >
+
+                    <label for="profile-image-input">
+                        Foto de perfil
+                    </label>
+
+                    <input
+                        type="file"
+                        id="profile-image-input"
+                        accept="image/*"
+                    >
+
+                    <img
+                        id="profile-image-preview"
+                        alt="Vista previa de perfil"
+                        hidden
+                    >
+
+                    <div class="form-buttons">
+
+                        <button type="submit">
+                            Guardar cambios
+                        </button>
+
+                        <button
+                            type="button"
+                            id="cancel-profile-button"
+                            class="secondary-button"
+                        >
+                            Cancelar
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </section>
+
+            <!-- INICIO -->
+            <section id="home-section" class="home-page">
+
+                <div class="section-heading">
+
+                    <span class="eyebrow">
+                        BIENVENIDO A MI RINCÓN
+                    </span>
+
+                    <h2>Mi muro</h2>
+
+                    <p>
+                        Ideas, recuerdos y cosas que quiero compartir.
+                    </p>
+
+                </div>
+
+                <!-- ACCESO ADMINISTRADOR -->
+                <div class="form-card" id="admin-login-area">
+
+                    <h3>Administración</h3>
+
+                    <p class="form-description">
+                        Inicia sesión para administrar el blog.
+                    </p>
+
+                    <form id="admin-login-form">
+
+                        <label for="admin-email">
+                            Correo electrónico
+                        </label>
+
+                        <input
+                            type="email"
+                            id="admin-email"
+                            placeholder="Tu correo"
+                            autocomplete="username"
+                            required
+                        >
+
+                        <label for="admin-password">
+                            Contraseña
+                        </label>
+
+                        <input
+                            type="password"
+                            id="admin-password"
+                            placeholder="Tu contraseña"
+                            autocomplete="current-password"
+                            required
+                        >
+
+                        <button type="submit">
+                            Iniciar sesión
+                        </button>
+
+                    </form>
+
+                    <button
+                        type="button"
+                        id="admin-logout-button"
+                        hidden
+                    >
+                        Cerrar sesión
+                    </button>
+
+                    <p
+                        id="admin-status"
+                        role="status"
+                        aria-live="polite"
+                    ></p>
+
+                </div>
+
+                <!-- CREAR PUBLICACIÓN: SOLO ADMINISTRADOR -->
+                <form
+                    id="post-form"
+                    class="form-card"
+                    hidden
+                >
+
+                    <h3 id="form-title">
+                        Crear publicación
+                    </h3>
+
+                    <p class="form-description">
+                        ¿Qué tienes en mente?
+                    </p>
+
+                    <label for="post-content">
+                        Tu publicación
+                    </label>
+
+                    <textarea
+                        id="post-content"
+                        placeholder="Escribe algo interesante..."
+                        required
+                    ></textarea>
+
+                    <label for="post-category">
+                        Categoría
+                    </label>
+
+                    <select id="post-category" required>
+
+                        <option value="Videojuegos">
+                            Videojuegos
+                        </option>
+
+                        <option value="Anime">
+                            Anime
+                        </option>
+
+                        <option value="Pendejadas">
+                            Pendejadas
+                        </option>
+
+                    </select>
+
+                    <label for="post-image">
+                        Añadir imagen
+                    </label>
+
+                    <input
+                        type="file"
+                        id="post-image"
+                        accept="image/*"
+                    >
+
+                    <img
+                        id="image-preview"
+                        alt="Vista previa de publicación"
+                        hidden
+                    >
+
+                    <div class="form-buttons">
+
+                        <button
+                            type="submit"
+                            id="submit-button"
+                        >
+                            ✦ Publicar
+                        </button>
+
+                        <button
+                            type="button"
+                            id="cancel-button"
+                            class="secondary-button"
+                            hidden
+                        >
+                            Cancelar edición
+                        </button>
+
+                    </div>
+
+                </form>
+
+                <!-- PUBLICACIONES -->
+                <div class="posts-heading">
+
+                    <h3>Publicaciones</h3>
+
+                    <span class="posts-decoration">
+                        ✦ ✦ ✦
+                    </span>
+
+                </div>
+
+                <section
+                    id="posts-container"
+                    aria-live="polite"
+                ></section>
+
+            </section>
+
+        </main>
+
+    </div>
+
+    <!-- PIE DE PÁGINA -->
+    <footer class="site-footer">
+
+        <p>
+            ✦ Mi Blog Personal · Un espacio hecho por mí ✦
+        </p>
+
+    </footer>
+
+    <!-- JAVASCRIPT -->
+    <script type="module" src="js/script.js"></script>
+
+</body>
+</html>
