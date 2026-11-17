@@ -70,9 +70,9 @@ function canPublish() {
 }
 
 function getRole(uid) {
-    if (uid === ADMIN_UID) return "Administrador";
-    if (COLLABORATOR_UIDS.includes(uid)) return "Colaborador";
-    return "Autor";
+    if (uid === ADMIN_UID) return "Senpai";
+    if (COLLABORATOR_UIDS.includes(uid)) return "Kohai";
+    return "Incel";
 }
 
 function getCurrentProfile() {
@@ -674,11 +674,7 @@ function renderPosts() {
         const name = document.createElement("strong");
         name.textContent = authorName;
 
-        const role = document.createElement("small");
-        role.className = "post-date";
-        role.textContent = getRole(authorUid);
-
-        authorInfo.append(name, role);
+authorInfo.appendChild(name);
         author.appendChild(authorInfo);
 
         // Categoría
