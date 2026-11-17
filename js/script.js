@@ -25,10 +25,14 @@ import {
 
 
 /* ==========================================
-   CONFIGURACIÓN DEL ADMINISTRADOR
+   CONFIGURACIÓN DE USUARIOS
 ========================================== */
 
 const ADMIN_UID = "53x9OTzsIqZgWyaES5gVUFAUprC3";
+
+const COLLABORATOR_UIDS = [
+    "mTC8hayXPrRzXOXKXXyZaFDXrrg2"
+];
 
 const validCategories = [
     "Videojuegos",
@@ -37,6 +41,7 @@ const validCategories = [
 ];
 
 let isAdmin = false;
+let isCollaborator = false;
 let currentUser = null;
 
 let posts = [];
@@ -52,6 +57,15 @@ let profile = {
     age: "",
     image: ""
 };
+
+
+/* ==========================================
+   PERMISOS
+========================================== */
+
+function canPublish() {
+    return isAdmin || isCollaborator;
+}
 
 
 /* ==========================================
@@ -119,14 +133,19 @@ function showMessage(element, message) {
 }
 
 function setAdminUI() {
-    postForm.hidden = !isAdmin;
+    const loggedIn = canPublish();
+
+    postForm.hidden = !loggedIn;
     profileAdminControls.hidden = !isAdmin;
 
-    adminLoginForm.hidden = isAdmin;
-    adminLogoutButton.hidden = !isAdmin;
+    adminLoginForm.hidden = loggedIn;
+    adminLogoutButton.hidden = !loggedIn;
 
     if (!isAdmin) {
         profileForm.hidden = true;
+    }
+
+    if (!loggedIn) {
         resetPostForm();
     }
 }
@@ -181,7 +200,7 @@ profileLink.addEventListener("click", function(event) {
 
 
 /* ==========================================
-   AUTENTICACIÓN DEL ADMINISTRADOR
+   AUTENTICACIÓN
 ========================================== */
 
 adminLoginForm.addEventListener("submit", async function(event) {
@@ -220,20 +239,24 @@ adminLogoutButton.addEventListener("click", async function() {
 onAuthStateChanged(auth, async function(user) {
     currentUser = user;
 
-    if (user && user.uid === ADMIN_UID) {
-        isAdmin = true;
+    isAdmin = !!user && user.uid === ADMIN_UID;
 
+    isCollaborator = !!user &&
+        COLLABORATOR_UIDS.includes(user.uid);
+
+    if (isAdmin) {
         showMessage(adminStatus, "Sesión iniciada como administrador.");
 
-    } else {
-        isAdmin = false;
+    } else if (isCollaborator) {
+        showMessage(adminStatus, "Sesión iniciada como colaborador. Puedes publicar.");
 
-        if (user) {
-            await signOut(auth);
-            showMessage(adminStatus, "Esta cuenta no tiene permisos de administrador.");
-        } else {
-            showMessage(adminStatus, "");
-        }
+    } else if (user) {
+        showMessage(adminStatus, "Esta cuenta no tiene permisos.");
+
+        await signOut(auth);
+
+    } else {
+        showMessage(adminStatus, "");
     }
 
     setAdminUI();
@@ -271,7 +294,7 @@ onSnapshot(postsQuery, function(snapshot) {
 ========================================== */
 
 async function createPost(content, category, image) {
-    if (!isAdmin) return;
+    if (!canPublish()) return;
 
     try {
         await addDoc(collection(db, "posts"), {
@@ -526,9 +549,11 @@ postImage.addEventListener("change", async function() {
     const file = postImage.files[0];
 
     if (!file) {
-        selectedPostImage = null;
-        imagePreview.removeAttribute("src");
-        imagePreview.hidden = true;
+        if (!editingPostId) {
+            selectedPostImage = null;
+            imagePreview.removeAttribute("src");
+            imagePreview.hidden = true;
+        }
         return;
     }
 
@@ -556,7 +581,13 @@ postImage.addEventListener("change", async function() {
 postForm.addEventListener("submit", async function(event) {
     event.preventDefault();
 
-    if (!isAdmin) return;
+    if (!canPublish()) return;
+
+    if (editingPostId !== null && !isAdmin) {
+        alert("Solo el administrador puede editar publicaciones.");
+        resetPostForm();
+        return;
+    }
 
     const content = postContent.value.trim();
     const category = postCategory.value;
